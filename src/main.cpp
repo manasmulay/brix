@@ -7,5 +7,6 @@ using namespace std;
 
 int main(int argc, char const *argv[]) {
   split_file(FILE_PATH, STORAGE_FOLDER);
+  merge_files(STORAGE_FOLDER);
   return 0;
 }
