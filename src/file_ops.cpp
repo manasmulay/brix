@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-#define CHUNK_SIZE 50
+#define CHUNK_SIZE 1024*1000
 
 using namespace std;
 
