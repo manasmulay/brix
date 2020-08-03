@@ -1,4 +1,5 @@
 #include "file_ops.h"
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -6,8 +7,12 @@
 #include <filesystem>
 #include <vector>
 #include <algorithm>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #define CHUNK_SIZE 1024*1000
+#define PORT 8081
 
 using namespace std;
 
@@ -18,37 +23,61 @@ string get_file_name(string file_path) {
   return file_path.substr(++i);
 }
 
-int split_file(string file_path, string storage_folder_path) {
+int split_and_send_files(string file_path, string storage_folder_path) {
   int file_split_counter = 1;
   string file_name, output_file_name;
   file_name = get_file_name(file_path);
   ifstream file_stream;
+  cout << file_name << endl;
   file_stream.open(file_path, ios::in | ios::binary);
   if(file_stream.is_open()) {
     char *buffer;
     ofstream output;
     buffer = (char *) malloc(sizeof(char) * CHUNK_SIZE);
+	int sock = 0, valread; 
+    struct sockaddr_in serv_addr; 
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
+        printf("\n Socket creation error \n"); 
+        return -1; 
+    } 
+   
+    serv_addr.sin_family = AF_INET; 
+    serv_addr.sin_port = htons(PORT); 
+       
+    // Convert IPv4 and IPv6 addresses from text to binary form 
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n"); 
+        return -1; 
+    } 
+	if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+		printf("\nConnection Failed \n");
+		return -1;
+	}
     while(!file_stream.eof()) {
       // Generate the file name for the chunk
-      output_file_name.clear();
-      output_file_name = storage_folder_path;
-      output_file_name.append(file_name);
-      output_file_name.append(".part.");
-      output_file_name.append(to_string(file_split_counter));
+      output_file_name = generate_op_file_name(storage_folder_path, file_name, file_split_counter);
 
       // Write the contents
-      output.open(output_file_name.c_str(),ios::out | ios::trunc | ios::binary);
+      // output.open(output_file_name.c_str(),ios::out | ios::trunc | ios::binary);
 
-      if(output.is_open()) {
+		cout << "Sending " << file_split_counter << endl;
+      //if(output.is_open()) {
         file_stream.read(buffer, CHUNK_SIZE);
-        output.write(buffer, file_stream.gcount());
-        output.close();
+        //output.write(buffer, file_stream.gcount());
+        //output.close();
+		cout << "Sending " << file_split_counter << endl;
+		cout << "Sending buffer size: " << file_stream.gcount() << endl;
+    	send(sock, buffer, file_stream.gcount(), 0);
+	    printf("Hello message sent\n");
+		fsync(sock);
         file_split_counter += 1;
-      }
+      //}
     }
-
+	buffer = "exit";
+	send(sock, buffer, strlen(buffer),0);
     delete(buffer);
     file_stream.close();
+	close(sock);
   }
   else {
     cout << "Error opening file\n";
@@ -100,4 +129,14 @@ int merge_files(string storage_folder_path) {
   }
   output.close();
   return 0;
+}
+
+string generate_op_file_name(string storage_folder_path, string file_name, int file_split_counter) {
+  string output_file_name;
+  output_file_name.clear();
+  output_file_name = storage_folder_path;
+  output_file_name.append(file_name);
+  output_file_name.append(".part.");
+  output_file_name.append(to_string(file_split_counter));
+  return output_file_name;
 }

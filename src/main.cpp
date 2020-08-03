@@ -12,7 +12,7 @@ using namespace std;
 
 int main(int argc, char const *argv[]) {
   string hash_before_split = get_file_hash(FILE_PATH);
-  split_file(FILE_PATH, STORAGE_FOLDER);
+  split_and_send_files(FILE_PATH, STORAGE_FOLDER);
   merge_files(STORAGE_FOLDER);
   string hash_after_split = get_file_hash(MERGED_FILE);
   if(!hash_before_split.compare(hash_after_split)) {
