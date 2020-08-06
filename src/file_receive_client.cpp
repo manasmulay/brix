@@ -10,7 +10,7 @@
 
 #define PORT 8081
 #define IP "127.0.0.1"
-#define CHUNK_SIZE 1024*1000
+#define CHUNK_SIZE 1024*60
 #define STORAGE_FOLDER "../files/storage/"
 
 using namespace std;
@@ -53,22 +53,27 @@ int main(){
                        (socklen_t*)&addrlen))<0) { 
         	perror("accept");
         	exit(EXIT_FAILURE);
-    }	
+    }
+	
     while(true) {
 		ofstream output;
     	valread = read( new_socket , buffer, CHUNK_SIZE);
 		if(buffer[0] == 'e' &&
 			buffer[1] == 'x' &&
 			buffer[2] == 'i' &&
-			buffer[3] == 't'){
+			buffer[3] == 't') {
+			send(new_socket,"recv",strlen("recv"), 0);
+			close(new_socket);
 			break;
 		}
-		cout << "Read : " << valread << endl;
 		string storage_folder = STORAGE_FOLDER;
 		string file_name = generate_op_file_name(storage_folder, "input_file", split_counter++);
-		output.open(file_name.c_str(),ios::out | ios::trunc | ios::binary);
+		cout << "Read bytes: " << valread << endl;
+		send(new_socket, "read", 4, 0);
+		output.open(file_name.c_str(), ios::out | ios::binary);
 		if(output.is_open()) {
-			output.write(buffer, sizeof(buffer));
+			output.write(buffer, valread);
+			output.flush();
 			output.close();
 		}
 	}

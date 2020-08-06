@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define CHUNK_SIZE 1024*1000
+#define CHUNK_SIZE 1024*60
 #define PORT 8081
 
 using namespace std;
@@ -60,22 +60,22 @@ int split_and_send_files(string file_path, string storage_folder_path) {
       // Write the contents
       // output.open(output_file_name.c_str(),ios::out | ios::trunc | ios::binary);
 
-		cout << "Sending " << file_split_counter << endl;
       //if(output.is_open()) {
         file_stream.read(buffer, CHUNK_SIZE);
         //output.write(buffer, file_stream.gcount());
         //output.close();
-		cout << "Sending " << file_split_counter << endl;
+		cout << sizeof(buffer) << endl;
 		cout << "Sending buffer size: " << file_stream.gcount() << endl;
     	send(sock, buffer, file_stream.gcount(), 0);
 	    printf("Hello message sent\n");
 		fsync(sock);
-        file_split_counter += 1;
+        read(sock, buffer, 1024);
+		file_split_counter += 1;
       //}
     }
 	buffer = "exit";
 	send(sock, buffer, strlen(buffer),0);
-    delete(buffer);
+    //delete(buffer);
     file_stream.close();
 	close(sock);
   }
@@ -114,6 +114,7 @@ int merge_files(string storage_folder_path) {
   vector<string> file_list = get_split_files_list(storage_folder_path);
   ofstream output;
   ifstream ifs;
+  cout << "Merging files ...\n";
   output.open((storage_folder_path + "file").c_str(),ios::out | ios::trunc | ios::binary);
   for (string s : file_list) {
     ifs.open(s, ios::in | ios::binary);
